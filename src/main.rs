@@ -1,3 +1,5 @@
+use std::io::{self, BufRead};
+
 mod huffman;
 mod bintree;
 
@@ -13,4 +15,22 @@ fn main() {
     bintree::add_tree(new_tree.clone(), root, bintree::Side::Left);
     println!("Test 3: ########");
     new_tree.borrow().print_tree();
+    
+
+    let mut data : Vec<u8> = Vec::new();
+
+    let stdin = io::stdin();
+    for line in stdin.lock().lines() {
+        let line_str = line.unwrap_or("".to_string());
+        for c in line_str.as_bytes() {
+            data.push(c.clone());
+        }
+    }
+
+    for c in &data {
+        println!("{}", *c);
+    }
+
+    let _hfmn = huffman::HuffmanState::new(data);
+    
 }
