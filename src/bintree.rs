@@ -2,7 +2,7 @@ use core::fmt;
 use std::{rc::*, cell::RefCell};
 
 
-pub struct BinTree<T : fmt::Display> {
+pub struct BinTree<T> {
     parent : Option<Weak<RefCell<BinTree<T>>>>,
     val : T,
     right : Option<Rc<RefCell<BinTree<T>>>>,
@@ -14,7 +14,7 @@ pub enum Side{
     Right
 }
 
-impl<T: fmt::Display> BinTree<T> {
+impl<T> BinTree<T> {
 
     pub fn new(val: T) -> Self {
         Self{parent: None,
@@ -29,6 +29,8 @@ impl<T: fmt::Display> BinTree<T> {
             right: None, 
             left: None }))
     }
+}
+impl<T: fmt::Display> BinTree<T> {
     pub fn print_tree(&self){
         self.print_tree_depth(0)
     }
