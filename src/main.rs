@@ -1,15 +1,16 @@
 mod huffman;
+mod bintree;
 
 fn main() {
-    let root  = huffman::BinTree::as_ref(0);
+    let root  = bintree::BinTree::as_ref(0);
     println!("Test 1: ########");
     root.borrow().print_tree();
-    huffman::BinTree::add_element(root.clone(), 4, huffman::Side::Right);
-    huffman::BinTree::add_element(root.clone(), 5, huffman::Side::Left);
+    bintree::add_element(root.clone(), 4, bintree::Side::Right);
+    bintree::add_element(root.clone(), 5, bintree::Side::Left);
     println!("Test 2: ########");
     root.borrow().print_tree();
-    let new_tree = huffman::BinTree::as_ref(2);
-    huffman::BinTree::add_tree(new_tree.clone(), root, huffman::Side::Left);
+    let new_tree = bintree::BinTree::as_ref(2);
+    bintree::add_tree(new_tree.clone(), root, bintree::Side::Left);
     println!("Test 3: ########");
     new_tree.borrow().print_tree();
 }
