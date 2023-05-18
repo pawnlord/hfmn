@@ -136,7 +136,6 @@ fn generate_tree(mut list: Vec<Node>) -> (Rc<RefCell<BinTree<HuffmanNode>>>, Has
         val2.add_to_tree(tree.clone(), Side::Left);
         val2.update_encoding(&mut encoding, false);
 
-
         list.push(Node::Branch(tree.clone()));
         list.sort();
     }
@@ -190,6 +189,64 @@ impl HuffmanState{
 
         Self { raw_data: raw_data, decoding: root, encoding}
 
+    }
+
+    pub fn compress(&self) -> Vec<u8> {
+        // First pass, slow and inefficient
+        let mut raw_flags = Vec::<u8>::new();
+        for c in &self.raw_data{
+            let encoding_option = self.encoding.get(c);
+            if encoding_option.is_none(){
+                continue;
+            }
+            let encoding = encoding_option.unwrap();
+            for flag in encoding.bits.borrow_mut().clone() {
+                raw_flags.push(if flag {1} else {0});
+            }
+        }
+        let mut compressed_data = Vec::<u8>::new();
+        let mut bit = 0;
+        let mut current = 0;
+        compressed_data.push(0);
+        for flag in raw_flags {
+            compressed_data[current] |= flag << bit;
+            bit += 1;
+            if bit == 8 {
+                bit = 0;
+                current += 1;
+                compressed_data.push(0);
+            }
+        }
+
+        return compressed_data;
+    }
+    pub fn decompress(&self, compressed : Vec<u8>) -> Vec<u8> {
+        let mut bit = 0;
+        let mut current_node = self.decoding.clone();
+        let mut uncompressed: Vec<u8> = Vec::new();
+        for c in compressed {
+            while bit < 8 {
+                let flag = c & (1<<bit);
+                if flag != 0 {
+                    if current_node.borrow_mut().right.is_some() {
+                        let temp = current_node.borrow_mut().right.as_ref().unwrap().clone();
+                        current_node = temp;
+                    }
+                } else {
+                    if current_node.borrow_mut().left.is_some() {
+                        let temp = current_node.borrow_mut().left.as_ref().unwrap().clone();
+                        current_node = temp;
+                    }
+                }
+                if current_node.borrow_mut().val.character.is_some() {
+                    uncompressed.push(current_node.borrow_mut().val.character.unwrap());
+                    current_node = self.decoding.clone();
+                }
+                bit += 1;
+            }
+            bit = 0;
+        }
+        return uncompressed;
     }
 
 }

@@ -27,10 +27,12 @@ fn main() {
         }
     }
 
-    for c in &data {
-        println!("{}", *c);
-    }
+    println!("size in: {}", data.len());
 
-    let _hfmn = huffman::HuffmanState::new(data);
+    let hfmn = huffman::HuffmanState::new(data);
+    let compressed_data = hfmn.compress();
+    println!("Size of compressed data: {}", compressed_data.len());
+    let decompressed_data = hfmn.decompress(compressed_data);
+    println!("Size of decompressed data: {}", decompressed_data.len());
     
 }
