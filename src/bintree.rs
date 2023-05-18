@@ -4,9 +4,9 @@ use std::{rc::*, cell::RefCell};
 
 pub struct BinTree<T>{
     pub val : T,
-    parent : Option<Weak<RefCell<BinTree<T>>>>,
-    right : Option<Rc<RefCell<BinTree<T>>>>,
-    left : Option<Rc<RefCell<BinTree<T>>>>,
+    pub parent : Option<Weak<RefCell<BinTree<T>>>>,
+    pub right : Option<Rc<RefCell<BinTree<T>>>>,
+    pub left : Option<Rc<RefCell<BinTree<T>>>>,
 }
 impl <T: Ord> PartialOrd for BinTree<T>{
     fn partial_cmp(&self, rhs: &Self) -> Option<std::cmp::Ordering> { 
