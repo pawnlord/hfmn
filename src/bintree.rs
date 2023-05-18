@@ -2,13 +2,29 @@ use core::fmt;
 use std::{rc::*, cell::RefCell};
 
 
-pub struct BinTree<T> {
+pub struct BinTree<T>{
+    pub val : T,
     parent : Option<Weak<RefCell<BinTree<T>>>>,
-    val : T,
     right : Option<Rc<RefCell<BinTree<T>>>>,
     left : Option<Rc<RefCell<BinTree<T>>>>,
 }
+impl <T: Ord> PartialOrd for BinTree<T>{
+    fn partial_cmp(&self, rhs: &Self) -> Option<std::cmp::Ordering> { 
+        self.val.partial_cmp(&rhs.val)
+    }
+}
+impl <T: Ord> PartialEq for BinTree<T>{
+    fn eq(&self, self2: &Self) -> bool {
+        self.val.eq(&self2.val)
+    }
+}
+impl <T: Ord> Eq for BinTree<T>{}
 
+impl <T: Ord> Ord for BinTree<T>{
+    fn cmp(&self, self2: &Self) -> std::cmp::Ordering {
+        self.val.cmp(&self2.val)
+    }
+}
 pub enum Side{
     Left,
     Right
