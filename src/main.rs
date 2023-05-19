@@ -34,5 +34,7 @@ fn main() {
     println!("Size of compressed data: {}", compressed_data.len());
     let decompressed_data = hfmn.decompress(compressed_data);
     println!("Size of decompressed data: {}", decompressed_data.len());
-    
+    let file = std::fs::File::create("hello.txt");
+    hfmn.save_to_file(&file.unwrap());
+
 }

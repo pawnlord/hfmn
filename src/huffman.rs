@@ -248,35 +248,68 @@ impl HuffmanState{
         }
         return uncompressed;
     }
-    pub fn save_to_file(&self, mut file: std::fs::File){
+    pub fn save_to_file(&self, mut file: &std::fs::File){
         // Find lowest left node
         let mut curr_node: Rc<RefCell<BinTree<HuffmanNode>>> = self.decoding.clone();
         while curr_node.borrow_mut().left.is_some(){
-            let left = curr_node.borrow_mut().left.as_ref().unwrap();
-            curr_node = left.clone(); 
+            let left = curr_node.borrow_mut().left.as_ref().unwrap().clone();
+            curr_node = left; 
         }
-        while bintree::is_next_in_order(curr_node) {
+        let offset = bintree::get_size(self.decoding.clone()) + 8;
+        
+        let mut offset_u8 = Vec::<u8>::new();
+        for i in 0..8 {
+            offset_u8.push(((offset >> (8*i)) & 0xFF) as u8);
+        }
+        file.write(offset_u8.as_slice());
+        
+        write_node(file, curr_node.clone());
+        while bintree::is_next_in_order(curr_node.clone()) {
             if curr_node.borrow_mut().right.is_some() {
-                let right = curr_node.borrow_mut().right.as_ref().unwrap();
-                curr_node = right.clone();
+                let right = curr_node.borrow_mut().right.as_ref().unwrap().clone();
+                curr_node = right;
                 while curr_node.borrow_mut().left.is_some(){
-                    let left = curr_node.borrow_mut().left.as_ref().unwrap();
-                    curr_node = left.clone(); 
+                    let left = curr_node.borrow_mut().left.as_ref().unwrap().clone();
+                    curr_node = left; 
                 }
 
             } else {
-                curr_node = curr_node.borrow_mut().parent.unwrap();
+                let temp = curr_node.borrow_mut().parent.as_ref().unwrap().clone();
+                curr_node = temp;
             }
             // Write current node
-            let freq: &[u8] = &[0,0,0,0];
-            let char: &[u8] = &[0];
-            for i in 0..4 {
-                freq[i] = ((curr_node.borrow_mut().val.freq >> (8*i)) & 0xFF) as u8;
-            }
-            char[0] = if curr_node.borrow_mut().val.character.is_some() {*curr_node.borrow_mut().val.character.as_ref().unwrap()} else {0};
-            file.write(freq);
-            file.write(char);
+            write_node(file, curr_node.clone());
         }
+        curr_node = self.decoding.clone();
+        let mut stack = Vec::<Rc<RefCell<BinTree<HuffmanNode>>>>::new();
+        while !stack.is_empty() || curr_node.borrow_mut().left.is_some() {
+            write_node(file, curr_node.clone());
+            if curr_node.borrow_mut().left.is_some() {
+                let left = curr_node.borrow_mut().left.as_ref().unwrap().clone();
+                curr_node = left;
+                if curr_node.borrow_mut().right.is_some() {
+                    stack.push(curr_node.borrow_mut().right.as_ref().unwrap().clone());
+                }
+            } else {
+                curr_node = stack.pop().unwrap();
+            }
+        }
+        // save compressed data
+        let data = self.compress();
+        file.write(data.as_slice());
     }
+
+}
+fn write_node(mut file: &std::fs::File, curr_node: Rc<RefCell<BinTree<HuffmanNode>>>) {
+    let mut freq = Vec::<u8>::new();
+    let mut char = Vec::<u8>::new();
+    for i in 0..4 {
+        freq.push(((curr_node.borrow_mut().val.freq >> (8*i)) & 0xFF) as u8);
+    }
+    char.push(if curr_node.borrow_mut().val.character.is_some() {
+            *curr_node.borrow_mut().val.character.as_ref().unwrap()
+        } else {0});
+    file.write(freq.as_slice());
+    file.write(char.as_slice());
 
 }

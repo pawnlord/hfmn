@@ -67,7 +67,7 @@ impl<T: fmt::Display> BinTree<T> {
 }
 
 pub fn add_tree<T: fmt::Display>(tree: Rc<RefCell<BinTree<T>>>, child: Rc<RefCell<BinTree<T>>>, side: Side){
-    child.borrow_mut().parent = Option::Some(&tree.clone());
+    child.borrow_mut().parent = Option::Some(tree.clone());
     match side {
         Side::Left => {tree.borrow_mut().left = Option::Some(child.clone());}
         Side::Right => {tree.borrow_mut().right = Option::Some(child.clone());}
@@ -82,7 +82,7 @@ pub fn is_next_in_order<T>(tree: Rc<RefCell<BinTree<T>>>) -> bool {
     let exists_parent = tree.borrow_mut().parent.is_some();
     let is_left = if exists_parent {
         if tree.borrow_mut().parent.as_ref().unwrap().borrow_mut().left.is_some() {
-            tree.borrow_mut().parent.as_ref().unwrap().borrow_mut().left.as_ref().unwrap() == tree
+            tree.borrow_mut().parent.as_ref().unwrap().borrow_mut().left.as_ref().unwrap().as_ptr().eq(&tree.as_ptr())
         } else {
             false
         }
@@ -91,4 +91,14 @@ pub fn is_next_in_order<T>(tree: Rc<RefCell<BinTree<T>>>) -> bool {
     };
 
     return exists_right || is_left;
+}
+
+pub fn get_size<T>(tree: Rc<RefCell<BinTree<T>>>) -> u64{
+    let left = if tree.borrow_mut().left.is_some(){
+        get_size(tree.borrow_mut().left.as_ref().unwrap().clone())
+    } else {0};
+    let right = if tree.borrow_mut().right.is_some(){
+        get_size(tree.borrow_mut().right.as_ref().unwrap().clone())
+    } else {0};
+    return left + right + 1;
 }
