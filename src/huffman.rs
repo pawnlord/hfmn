@@ -1,5 +1,5 @@
 use core::fmt;
-use std::{collections::HashMap, rc::Rc, cell::RefCell, io::Write};
+use std::{collections::HashMap, rc::Rc, cell::RefCell, io::{Write, Read, Seek}};
 
 use crate::bintree::{*, self};
 
@@ -294,18 +294,36 @@ impl HuffmanState{
         while !stack.is_empty() || curr_node.borrow_mut().left.is_some() {
             write_node(file, curr_node.clone());
             if curr_node.borrow_mut().left.is_some() {
-                let left = curr_node.borrow_mut().left.as_ref().unwrap().clone();
-                curr_node = left;
                 if curr_node.borrow_mut().right.is_some() {
                     stack.push(curr_node.borrow_mut().right.as_ref().unwrap().clone());
                 }
+                let left = curr_node.borrow_mut().left.as_ref().unwrap().clone();
+                curr_node = left;
             } else {
                 curr_node = stack.pop().unwrap();
             }
         }
+        write_node(file, curr_node.clone());
         // save compressed data
         let data = self.compress();
         file.write(data.as_slice());
+    }
+
+    pub fn load_from_file(mut file: &mut std::fs::File, state: &Self){
+        let mut inorder = Vec::<HuffmanNode>::new();
+        let mut preorder = Vec::<HuffmanNode>::new();
+        let offset = read_u64(&mut file);
+        println!("{}", Seek::seek(&mut file, std::io::SeekFrom::Current(0)).unwrap());
+        while Seek::seek(&mut file, std::io::SeekFrom::Current(0)).unwrap() < offset {
+            inorder.push(read_node(&mut file));
+        }
+        // 2*size of  tree + offset = (2*(size of tree + offset)) - offset  
+        while Seek::seek(&mut file, std::io::SeekFrom::Current(0)).unwrap() < (2*offset)-8 {
+            preorder.push(read_node(&mut file));
+        }
+        let tree = create_from_orders(inorder, preorder);
+        tree.borrow_mut().print_tree();
+        println!("Is this consistent with what was pulled: {}", state.decoding == tree);
     }
 
 }
@@ -321,4 +339,31 @@ fn write_node(mut file: &std::fs::File, curr_node: Rc<RefCell<BinTree<HuffmanNod
     file.write(freq.as_slice());
     file.write(char.as_slice());
 
+}
+fn read_u64(file: &mut std::fs::File) -> u64 {
+    let mut integer_u8 = vec![0u8; 8];
+    let result = file.read_exact(&mut integer_u8);
+    let mut integer: u64 = 0;
+    assert!(result.is_ok());
+    for i in 0..8{
+        integer |= (integer_u8[i] as u64) << (i*8);
+    }
+    integer
+}
+fn read_node(file: &mut std::fs::File) -> HuffmanNode {
+    let mut freq_u8 = vec![0u8; 4];
+    let mut result = file.read_exact(&mut freq_u8);
+    let mut freq: u32 = 0;
+    assert!(result.is_ok());
+    for i in 0..4{
+        freq |= (freq_u8[i] as u32) << (i*8);
+    }
+    let mut char_u8 = vec![0u8; 1];
+    result = file.read_exact(&mut char_u8);
+    assert!(result.is_ok());
+    if char_u8[0] == 0 {
+        HuffmanNode::empty(freq as u64)
+    } else {
+        HuffmanNode::new(freq as u64, char_u8[0])
+    }
 }
