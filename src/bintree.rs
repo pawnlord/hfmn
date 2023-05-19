@@ -4,7 +4,7 @@ use std::{rc::*, cell::RefCell};
 
 pub struct BinTree<T>{
     pub val : T,
-    pub parent : Option<Weak<RefCell<BinTree<T>>>>,
+    pub parent : Option<Rc<RefCell<BinTree<T>>>>,
     pub right : Option<Rc<RefCell<BinTree<T>>>>,
     pub left : Option<Rc<RefCell<BinTree<T>>>>,
 }
@@ -67,7 +67,7 @@ impl<T: fmt::Display> BinTree<T> {
 }
 
 pub fn add_tree<T: fmt::Display>(tree: Rc<RefCell<BinTree<T>>>, child: Rc<RefCell<BinTree<T>>>, side: Side){
-    child.borrow_mut().parent = Option::Some(Rc::downgrade(&tree.clone()));
+    child.borrow_mut().parent = Option::Some(&tree.clone());
     match side {
         Side::Left => {tree.borrow_mut().left = Option::Some(child.clone());}
         Side::Right => {tree.borrow_mut().right = Option::Some(child.clone());}
@@ -76,4 +76,19 @@ pub fn add_tree<T: fmt::Display>(tree: Rc<RefCell<BinTree<T>>>, child: Rc<RefCel
 pub fn add_element<T: fmt::Display>(tree: Rc<RefCell<BinTree<T>>>, val: T, side: Side) {
     let child : BinTree::<T>  = BinTree::<T>::new(val);
     add_tree(tree, Rc::new(RefCell::new(child)), side)
+}
+pub fn is_next_in_order<T>(tree: Rc<RefCell<BinTree<T>>>) -> bool {
+    let exists_right = tree.borrow_mut().right.is_some();
+    let exists_parent = tree.borrow_mut().parent.is_some();
+    let is_left = if exists_parent {
+        if tree.borrow_mut().parent.as_ref().unwrap().borrow_mut().left.is_some() {
+            tree.borrow_mut().parent.as_ref().unwrap().borrow_mut().left.as_ref().unwrap() == tree
+        } else {
+            false
+        }
+    } else {
+        false
+    };
+
+    return exists_right || is_left;
 }

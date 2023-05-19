@@ -1,5 +1,5 @@
 use core::fmt;
-use std::{collections::HashMap, rc::Rc, cell::RefCell};
+use std::{collections::HashMap, rc::Rc, cell::RefCell, io::Write};
 
 use crate::bintree::{*, self};
 
@@ -247,6 +247,36 @@ impl HuffmanState{
             bit = 0;
         }
         return uncompressed;
+    }
+    pub fn save_to_file(&self, mut file: std::fs::File){
+        // Find lowest left node
+        let mut curr_node: Rc<RefCell<BinTree<HuffmanNode>>> = self.decoding.clone();
+        while curr_node.borrow_mut().left.is_some(){
+            let left = curr_node.borrow_mut().left.as_ref().unwrap();
+            curr_node = left.clone(); 
+        }
+        while bintree::is_next_in_order(curr_node) {
+            if curr_node.borrow_mut().right.is_some() {
+                let right = curr_node.borrow_mut().right.as_ref().unwrap();
+                curr_node = right.clone();
+                while curr_node.borrow_mut().left.is_some(){
+                    let left = curr_node.borrow_mut().left.as_ref().unwrap();
+                    curr_node = left.clone(); 
+                }
+
+            } else {
+                curr_node = curr_node.borrow_mut().parent.unwrap();
+            }
+            // Write current node
+            let freq: &[u8] = &[0,0,0,0];
+            let char: &[u8] = &[0];
+            for i in 0..4 {
+                freq[i] = ((curr_node.borrow_mut().val.freq >> (8*i)) & 0xFF) as u8;
+            }
+            char[0] = if curr_node.borrow_mut().val.character.is_some() {*curr_node.borrow_mut().val.character.as_ref().unwrap()} else {0};
+            file.write(freq);
+            file.write(char);
+        }
     }
 
 }
