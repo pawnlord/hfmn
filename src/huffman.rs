@@ -251,11 +251,14 @@ impl HuffmanState{
     pub fn save_to_file(&self, mut file: &std::fs::File){
         // Find lowest left node
         let mut curr_node: Rc<RefCell<BinTree<HuffmanNode>>> = self.decoding.clone();
+        let mut stack = Vec::<Rc<RefCell<BinTree<HuffmanNode>>>>::new();
+
         while curr_node.borrow_mut().left.is_some(){
+            stack.push(curr_node.clone());
             let left = curr_node.borrow_mut().left.as_ref().unwrap().clone();
             curr_node = left; 
         }
-        let offset = bintree::get_size(self.decoding.clone()) + 8;
+        let offset = (5 * bintree::get_size(self.decoding.clone())) + 8;
         
         let mut offset_u8 = Vec::<u8>::new();
         for i in 0..8 {
@@ -264,24 +267,30 @@ impl HuffmanState{
         file.write(offset_u8.as_slice());
         
         write_node(file, curr_node.clone());
-        while bintree::is_next_in_order(curr_node.clone()) {
+
+        while bintree::is_next_in_order(curr_node.clone(), stack.is_empty()) {
             if curr_node.borrow_mut().right.is_some() {
                 let right = curr_node.borrow_mut().right.as_ref().unwrap().clone();
                 curr_node = right;
                 while curr_node.borrow_mut().left.is_some(){
+                    stack.push(curr_node.clone());
                     let left = curr_node.borrow_mut().left.as_ref().unwrap().clone();
                     curr_node = left; 
                 }
-
             } else {
-                let temp = curr_node.borrow_mut().parent.as_ref().unwrap().clone();
-                curr_node = temp;
+                curr_node = stack.pop().unwrap().clone();
             }
             // Write current node
             write_node(file, curr_node.clone());
         }
         curr_node = self.decoding.clone();
-        let mut stack = Vec::<Rc<RefCell<BinTree<HuffmanNode>>>>::new();
+        // not needed 
+        stack.clear();
+        
+        if curr_node.borrow_mut().right.is_some(){
+            stack.push(curr_node.borrow_mut().right.as_ref().unwrap().clone());
+        }
+        
         while !stack.is_empty() || curr_node.borrow_mut().left.is_some() {
             write_node(file, curr_node.clone());
             if curr_node.borrow_mut().left.is_some() {

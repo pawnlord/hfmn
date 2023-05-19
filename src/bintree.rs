@@ -77,20 +77,13 @@ pub fn add_element<T: fmt::Display>(tree: Rc<RefCell<BinTree<T>>>, val: T, side:
     let child : BinTree::<T>  = BinTree::<T>::new(val);
     add_tree(tree, Rc::new(RefCell::new(child)), side)
 }
-pub fn is_next_in_order<T>(tree: Rc<RefCell<BinTree<T>>>) -> bool {
+pub fn is_next_in_order<T>(tree: Rc<RefCell<BinTree<T>>>, is_stack_empty: bool) -> bool {
     let exists_right = tree.borrow_mut().right.is_some();
-    let exists_parent = tree.borrow_mut().parent.is_some();
-    let is_left = if exists_parent {
-        if tree.borrow_mut().parent.as_ref().unwrap().borrow_mut().left.is_some() {
-            tree.borrow_mut().parent.as_ref().unwrap().borrow_mut().left.as_ref().unwrap().as_ptr().eq(&tree.as_ptr())
-        } else {
-            false
-        }
-    } else {
-        false
-    };
 
-    return exists_right || is_left;
+    return exists_right || !is_stack_empty;
+}
+pub fn has_parent<T>(tree: Rc<RefCell<BinTree<T>>>) -> bool {
+    tree.borrow_mut().parent.is_some()
 }
 
 pub fn get_size<T>(tree: Rc<RefCell<BinTree<T>>>) -> u64{
