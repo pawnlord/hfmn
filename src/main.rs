@@ -21,7 +21,7 @@ fn main() {
 
     let stdin = io::stdin();
     for line in stdin.lock().lines() {
-        let line_str = line.unwrap_or("".to_string());
+        let line_str = line.unwrap_or("".to_string()) + "\n";
         for c in line_str.as_bytes() {
             data.push(c.clone());
         }
@@ -32,7 +32,10 @@ fn main() {
     let hfmn = huffman::HuffmanState::new(data);
     let compressed_data = hfmn.compress();
     println!("Size of compressed data: {}", compressed_data.len());
-    let decompressed_data = hfmn.decompress(compressed_data);
+    let decompressed_data = hfmn.decompress(compressed_data.clone());
+    for u in &decompressed_data {
+        print!("{}", *u as char);
+    }
     println!("Size of decompressed data: {}", decompressed_data.len());
     {
         let file = std::fs::File::create("hello.txt");
@@ -40,6 +43,10 @@ fn main() {
     }
     {
         let file = std::fs::File::open("hello.txt");
-        huffman::HuffmanState::load_from_file(&mut file.unwrap(), &hfmn);
+        let (hfmn2, raw_data) = huffman::HuffmanState::load_from_file(&mut file.unwrap());
+        // for u in raw_data {
+        //     print!("{}", u as char);
+        // }
+        println!("{} == {}: {}", raw_data.len(), compressed_data.len(), raw_data == compressed_data);
     }
 }

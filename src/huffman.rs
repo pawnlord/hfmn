@@ -160,6 +160,36 @@ fn generate_tree(mut list: Vec<Node>) -> (Rc<RefCell<BinTree<HuffmanNode>>>, Has
     }
 }
 
+fn create_encoding_from_decoding(decoding: Rc<RefCell<BinTree<HuffmanNode>>>) -> HashMap<u8, HuffmanEncoding> {
+    let mut encoding = HashMap::<u8, HuffmanEncoding>::new();
+    let mut stack = Vec::<(Rc<RefCell<BinTree<HuffmanNode>>>, Vec::<bool>)>::new();
+    let mut curr_encoding = Vec::<bool>::new();    
+    let mut curr_node = decoding.clone();
+    while !stack.is_empty() || curr_node.borrow_mut().left.is_some() {
+        if curr_node.borrow_mut().val.character.is_some() {
+            encoding.insert(curr_node.borrow_mut().val.character.unwrap(),
+                HuffmanEncoding{bits: Rc::new(RefCell::new(curr_encoding.clone()))});
+        }
+        if curr_node.borrow_mut().left.is_some() {
+            if curr_node.borrow_mut().right.is_some(){
+                let mut clone = curr_encoding.clone();
+                clone.push(true);
+                stack.push((
+                    curr_node.borrow_mut().right.as_ref().unwrap().clone(),
+                    clone
+                ));
+            }
+            let right = curr_node.borrow_mut().right.as_ref().unwrap().clone();
+            curr_node = right;
+            curr_encoding.push(false);
+        } else {
+            // There is something in the stack
+            (curr_node, curr_encoding) = stack.pop().unwrap();
+        }
+    }
+    return encoding;
+}
+
 impl HuffmanState{
     pub fn new(raw_data: Vec<u8>) -> Self {
         let mut map = HashMap::<u8, HuffmanNode>::new();
@@ -309,7 +339,7 @@ impl HuffmanState{
         file.write(data.as_slice());
     }
 
-    pub fn load_from_file(mut file: &mut std::fs::File, state: &Self){
+    pub fn load_from_file(mut file: &mut std::fs::File) -> (Self, Vec<u8>){
         let mut inorder = Vec::<HuffmanNode>::new();
         let mut preorder = Vec::<HuffmanNode>::new();
         let offset = read_u64(&mut file);
@@ -323,9 +353,19 @@ impl HuffmanState{
         }
         let tree = create_from_orders(inorder, preorder);
         tree.borrow_mut().print_tree();
-        println!("Is this consistent with what was pulled: {}", state.decoding == tree);
+        let encoding = create_encoding_from_decoding(tree.clone());
+        let mut raw_data_u8 = Vec::<u8>::new();
+        file.read_to_end(&mut raw_data_u8);
+        let mut hfmn = Self{
+            raw_data: Vec::new(),
+            encoding: encoding,
+            decoding: tree
+        };
+        let raw_data = hfmn.decompress(raw_data_u8.to_vec());
+        println!("Size of decompressed data: {}", raw_data.len());
+        hfmn.raw_data = raw_data.clone();
+        return (hfmn, raw_data_u8);
     }
-
 }
 fn write_node(mut file: &std::fs::File, curr_node: Rc<RefCell<BinTree<HuffmanNode>>>) {
     let mut freq = Vec::<u8>::new();
